@@ -5,6 +5,14 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Current TS File",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceRoot}/node_modules/.bin/ts-node",
+      "args": ["${relativeFile}"],
+      "cwd": "${workspaceRoot}"
+    },
+    {
       "type": "pwa-node",
       "request": "launch",
       "name": "Launch Program",

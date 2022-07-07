@@ -1,4 +1,4 @@
-const md5 = require('md5')
+import md5 = require('md5')
 
 const TAG_SHOW_TITLE = 0x12
 const TAG_SHOW_TITLE2 = 0x1a
@@ -37,7 +37,41 @@ const TAG3_BACKDROP_DATA = 0x0a
 const TAG3_BACKDROP_MD5 = 0x12
 const TAG3_TIMESTAMP = 0x18
 
+export interface IInfo {
+  /** 标题 */
+  title: string
+  /** 副标题 */
+  episodeTitle: string
+  /** 发布时间 */
+  episodeReleaseDate: string
+  /** 是否锁定 */
+  episodeLocked: 0 | 1
+  /** 简介 */
+  chapterSummary: string
+  /** 来源JSON */
+  tagEpisodeMetaJson: {
+    [key: string]: any
+  }
+  /** 演员列表 */
+  cast: string[]
+  /** 导演列表 */
+  director: string[]
+  /** 类型列表 */
+  genre: string[]
+  /** 编剧列表 */
+  write: string[]
+  /** 分级 */
+  classification: string
+  /** 评分 */
+  rating: number
+  /** 背景图 base64 字符串 */
+  backdrop: string
+  /** 封面图 base64 字符串 */
+  poster: string
+}
+
 class ByteArray {
+  private byte: Array<number>
   constructor() {
     this.byte = []
   }
@@ -45,11 +79,11 @@ class ByteArray {
     return this.byte.length
   }
   // 写入数据
-  write(tag) {
+  write(tag: number) {
     this.byte.push(tag)
   }
   // 写入整数数据
-  writeInt(int, size = 255) {
+  writeInt(int: number, size = 255) {
     while (int > size) {
       this.write((int % 128) + 128)
       int = Math.floor(int / 128)
@@ -57,21 +91,25 @@ class ByteArray {
     this.write(int)
   }
   // 写入字符串数据
-  writeString(string, size = 255) {
-    let buffer = new Buffer.from(string)
+  writeString(string: string, size = 255) {
+    let buffer = Buffer.from(string)
     this.writeInt(buffer.length, size)
-    buffer.forEach(v => this.write(v))
+    buffer.forEach((v: number) => this.write(v))
+  }
+  forEach(callbackfn: (value: number, index: number, array: number[]) => void) {
+    this.byte.forEach(callbackfn)
   }
   toString() {
     return this.toBuffer().toString()
   }
   toBuffer() {
-    return new Buffer.from(this.byte)
+    return Buffer.from(this.byte)
   }
 }
 
-module.exports = class VsMeta extends ByteArray {
-  constructor(info) {
+export default class VsMeta extends ByteArray {
+  private info: IInfo = {} as IInfo
+  constructor(info: IInfo) {
     super()
     if (!info) return
     this.info = info
@@ -110,7 +148,7 @@ module.exports = class VsMeta extends ByteArray {
 
     // 来源json
     this.write(TAG_EPISODE_META_JSON)
-    this.writeString(info.tagEpisodeMetaJson)
+    this.writeString(JSON.stringify(info.tagEpisodeMetaJson))
 
     // 组数据1
     this.writeGroup1()
@@ -160,7 +198,7 @@ module.exports = class VsMeta extends ByteArray {
     })
     this.write(TAG_GROUP1)
     this.writeInt(byteArray.length, size)
-    byteArray.byte.forEach(v => this.write(v))
+    byteArray.forEach(v => this.write(v))
   }
   writeGroup3() {
     let info = this.info
@@ -180,6 +218,6 @@ module.exports = class VsMeta extends ByteArray {
     this.write(0xaa)
     this.write(0x01)
     this.writeInt(byteArray.length)
-    byteArray.byte.forEach(v => this.write(v))
+    byteArray.forEach(v => this.write(v))
   }
 }
